@@ -109,7 +109,7 @@ $displayName = (string) $currentUser['name'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pelapor / Dasbor - Servitory</title>
-    <link rel="stylesheet" href="../assets/css/dasbor.css?v=6">
+    <link rel="stylesheet" href="../assets/css/dasbor.css?v=8">
     <link rel="stylesheet" href="../assets/css/app-polish.css?v=3">
 </head>
 <body>
@@ -136,29 +136,31 @@ $displayName = (string) $currentUser['name'];
             <p class="form-message form-message-error" role="alert"><?= h($error) ?></p>
         <?php endif; ?>
 
-        <section class="summary-grid" aria-label="Ringkasan laporan">
-            <article class="summary-card">
-                <span class="summary-icon icon-total" aria-hidden="true">▤</span>
-                <div><p>Total laporan</p><strong><?= count($reports) ?></strong></div>
-            </article>
-            <article class="summary-card">
-                <span class="summary-icon icon-progress" aria-hidden="true">◷</span>
-                <div><p>Sedang diproses</p><strong><?= $activeReports ?></strong></div>
-            </article>
-            <article class="summary-card">
-                <span class="summary-icon icon-done" aria-hidden="true">✓</span>
-                <div><p>Selesai</p><strong><?= $completedReports ?></strong></div>
-            </article>
-        </section>
+        <div class="dashboard-overview">
+            <section class="summary-grid" aria-label="Ringkasan laporan">
+                <article class="summary-card">
+                    <span class="summary-icon icon-total" aria-hidden="true">▤</span>
+                    <div><p>Total laporan</p><strong><?= count($reports) ?></strong></div>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-icon icon-progress" aria-hidden="true">◷</span>
+                    <div><p>Sedang diproses</p><strong><?= $activeReports ?></strong></div>
+                </article>
+                <article class="summary-card">
+                    <span class="summary-icon icon-done" aria-hidden="true">✓</span>
+                    <div><p>Selesai</p><strong><?= $completedReports ?></strong></div>
+                </article>
+            </section>
 
-        <button class="create-report-card" id="openModalBtn" type="button">
-            <span class="plus-icon" aria-hidden="true">+</span>
-            <span class="create-report-copy">
-                <strong>Buat laporan baru</strong>
-                <span>Laporkan kendala peralatan atau fasilitas di ruangan Anda.</span>
-            </span>
-            <span class="create-report-arrow" aria-hidden="true"></span>
-        </button>
+            <button class="create-report-card" id="openModalBtn" type="button">
+                <span class="plus-icon" aria-hidden="true">+</span>
+                <span class="create-report-copy">
+                    <strong>Buat Laporan Baru</strong>
+                    <span>Laporkan ketidaktersediaan perangkat elektronik yang ada di ruangan Anda.</span>
+                </span>
+                <span class="create-report-arrow" aria-hidden="true"></span>
+            </button>
+        </div>
 
         <section class="history-section">
             <div class="section-heading">
