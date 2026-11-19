@@ -1,0 +1,77 @@
+.main-container {
+    max-width: 1120px;
+}
+
+.section-header-top h1 {
+    margin-top: 5px;
+    color: var(--text-main);
+    font-size: 22px;
+}
+
+.eyebrow {
+    color: var(--secondary-color);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.confirmation-form {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px 10px;
+    align-items: end;
+    margin-top: 18px;
+}
+
+.confirmation-form label {
+    grid-column: 1 / -1;
+    color: var(--text-main);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.confirmation-form select {
+    min-width: 0;
+    min-height: 38px;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    border-radius: 7px;
+    background: #fff;
+    color: var(--text-main);
+}
+
+.btn-confirm {
+    min-height: 38px;
+    padding: 8px 12px;
+    border: 1px solid var(--secondary-color);
+    border-radius: 7px;
+    background: var(--secondary-color);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btn-confirm:hover {
+    background: #087f82;
+}
+
+.confirmation-form select:focus-visible,
+.btn-confirm:focus-visible {
+    outline: 3px solid rgba(245, 130, 32, 0.4);
+    outline-offset: 2px;
+}
+
+@media (max-width: 520px) {
+    .reports-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .confirmation-form {
+        grid-template-columns: 1fr;
+    }
+
+    .confirmation-form label {
+        grid-column: auto;
+    }
+}

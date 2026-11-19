@@ -4,9 +4,10 @@ require_once __DIR__ . '/../includes/auth.php';
 requireRole('teknisi');
 
 $statuses = ['Diterima', 'Dijadwalkan', 'Selesai', 'Ditolak'];
+$currentUser = currentUser();
+$tabId = authTabId();
 $query = trim($_GET['q'] ?? '');
 $status = $_GET['status'] ?? '';
-$issue = $_GET['issue'] ?? '';
 $location = $_GET['location'] ?? '';
 $technicianId = $_GET['technician'] ?? '';
 $dateFrom = $_GET['from'] ?? '';
@@ -30,7 +31,7 @@ if ($technicianId !== '' && !ctype_digit((string) $technicianId)) {
     $technicianId = '';
 }
 
-$where = [];
+$where = ['r.confirmed_at IS NOT NULL', 'r.urgency IS NOT NULL'];
 $parameters = [];
 if ($query !== '') {
     $where[] = '(r.ticket ILIKE :query_ticket OR r.title ILIKE :query_title OR r.description ILIKE :query_description)';
@@ -41,10 +42,6 @@ if ($query !== '') {
 if ($status !== '') {
     $where[] = 'r.status = :status';
     $parameters['status'] = $status;
-}
-if ($issue !== '') {
-    $where[] = 'r.issue = :issue';
-    $parameters['issue'] = $issue;
 }
 if ($location !== '') {
     $where[] = 'r.location = :location';
@@ -68,11 +65,15 @@ $orderSql = $sort === 'oldest' ? 'ASC' : 'DESC';
 $fromSql = " FROM reports r
     JOIN users reporter ON reporter.id = r.reporter_id
     LEFT JOIN users technician ON technician.id = r.technician_id";
-$selectSql = 'SELECT r.ticket, reporter.name AS reporter_name, r.title, r.issue,
-                     r.reported_at, r.location, technician.name AS technician_name, r.status';
+$selectSql = 'SELECT r.ticket, reporter.name AS reporter_name, r.title,
+                     r.reported_at, r.location, technician.name AS technician_name,
+                     r.status, r.urgency';
 
-$issues = $pdo->query('SELECT DISTINCT issue FROM reports ORDER BY issue')->fetchAll(PDO::FETCH_COLUMN);
-$locations = $pdo->query('SELECT DISTINCT location FROM reports ORDER BY location')->fetchAll(PDO::FETCH_COLUMN);
+$locations = $pdo->query(
+    'SELECT DISTINCT location FROM reports
+     WHERE confirmed_at IS NOT NULL AND urgency IS NOT NULL
+     ORDER BY location'
+)->fetchAll(PDO::FETCH_COLUMN);
 $technicians = $pdo->query("SELECT id, name FROM users WHERE role = 'teknisi' ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
 
 if (($_GET['export'] ?? '') === 'csv') {
@@ -85,16 +86,16 @@ if (($_GET['export'] ?? '') === 'csv') {
         throw new RuntimeException('Tidak dapat menyiapkan file ekspor CSV.');
     }
     fwrite($output, "\xEF\xBB\xBF");
-    fputcsv($output, ['Nomor Tiket', 'Pelapor', 'Masalah', 'Jenis', 'Tanggal', 'Lokasi', 'Teknisi', 'Status']);
+    fputcsv($output, ['Nomor Tiket', 'Pelapor', 'Masalah', 'Tanggal', 'Lokasi', 'Teknisi', 'Urgensi', 'Status']);
     while ($report = $statement->fetch(PDO::FETCH_ASSOC)) {
         fputcsv($output, [
             $report['ticket'],
             $report['reporter_name'],
             $report['title'],
-            $report['issue'],
             date('Y-m-d H:i', strtotime($report['reported_at'])),
             $report['location'],
             $report['technician_name'] ?? '-',
+            $report['urgency'],
             $report['status'],
         ]);
     }
@@ -113,9 +114,9 @@ $statement->execute($parameters);
 $reports = $statement->fetchAll(PDO::FETCH_ASSOC);
 
 $filterValues = [
+    'tab' => $tabId,
     'q' => $query,
     'status' => $status,
-    'issue' => $issue,
     'location' => $location,
     'technician' => $technicianId,
     'from' => $dateFrom,
@@ -138,34 +139,23 @@ $statusClasses = [
     <title>Teknisi / Riwayat Laporan - Servitory</title>
     <link rel="stylesheet" href="../assets/css/teknisi.css">
     <link rel="stylesheet" href="../assets/css/riwayat.css">
+    <link rel="stylesheet" href="../assets/css/app-polish.css?v=3">
 </head>
 <body>
-    <header class="navbar">
-        <div class="nav-brand">
-            <div class="logo-box">S</div>
-            <span class="brand-title">Servitory</span>
-        </div>
-        <div class="nav-user">
-            <div class="user-avatar" aria-hidden="true"><?= h(mb_strtoupper(mb_substr($_SESSION['user_name'], 0, 1))) ?></div>
-            <div class="user-info">
-                <span class="user-name"><?= h($_SESSION['user_name']) ?></span>
-                <span class="user-role">Teknisi</span>
-            </div>
-            <form class="logout-form" method="post" action="../Keluar.php">
-                <input type="hidden" name="csrf_token" value="<?= h(csrfToken()) ?>">
-                <button class="btn-logout" type="submit">Keluar</button>
-            </form>
-        </div>
-    </header>
+    <?php
+    $headerUserName = (string) $currentUser['name'];
+    $headerRoleLabel = 'Teknisi';
+    include __DIR__ . '/../includes/header.php';
+    ?>
 
     <nav class="sub-nav" aria-label="Navigasi teknisi">
         <div class="sub-nav-container">
-            <a href="dasbor.php" class="tab-item">Dasbor</a>
-            <a href="riwayat.php" class="tab-item active" aria-current="page">Riwayat Seluruh Laporan</a>
+            <a href="<?= h(tabUrl('dasbor.php')) ?>" class="tab-item">Dasbor</a>
+            <a href="<?= h(tabUrl('riwayat.php')) ?>" class="tab-item active" aria-current="page">Riwayat Seluruh Laporan</a>
         </div>
     </nav>
 
-    <main class="main-container">
+    <main class="main-container" data-live-updates>
         <div class="page-header-row">
             <div>
                 <h2>Riwayat Seluruh Laporan</h2>
@@ -175,6 +165,7 @@ $statusClasses = [
         </div>
 
         <form class="filter-card" method="get" action="riwayat.php">
+            <input type="hidden" name="tab" value="<?= h($tabId) ?>">
             <div class="filter-grid">
                 <div class="filter-group">
                     <label for="filter-q">Pencarian</label>
@@ -186,15 +177,6 @@ $statusClasses = [
                         <option value="">Semua Status</option>
                         <?php foreach ($statuses as $option): ?>
                             <option value="<?= h($option) ?>" <?= $status === $option ? 'selected' : '' ?>><?= h($option) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="filter-group">
-                    <label for="filter-issue">Jenis Masalah</label>
-                    <select id="filter-issue" name="issue" class="filter-input">
-                        <option value="">Semua Jenis</option>
-                        <?php foreach ($issues as $option): ?>
-                            <option value="<?= h($option) ?>" <?= $issue === $option ? 'selected' : '' ?>><?= h($option) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -234,7 +216,7 @@ $statusClasses = [
                         <option value="oldest" <?= $sort === 'oldest' ? 'selected' : '' ?>>Terlama</option>
                     </select>
                 </div>
-                <a class="btn-reset" href="riwayat.php">Reset</a>
+                <a class="btn-reset" href="<?= h(tabUrl('riwayat.php')) ?>">Reset</a>
                 <button class="btn-filter" type="submit">Terapkan Filter</button>
             </div>
         </form>
@@ -242,7 +224,7 @@ $statusClasses = [
         <div class="table-responsive">
             <table class="report-table">
                 <thead>
-                    <tr><th>Nomor Tiket</th><th>Pelapor</th><th>Masalah</th><th>Jenis</th><th>Tanggal</th><th>Lokasi</th><th>Teknisi</th><th>Status</th></tr>
+                    <tr><th>Nomor Tiket</th><th>Pelapor</th><th>Masalah</th><th>Tanggal</th><th>Lokasi</th><th>Teknisi</th><th>Urgensi</th><th>Status</th></tr>
                 </thead>
                 <tbody>
                     <?php if ($reports === []): ?>
@@ -253,10 +235,10 @@ $statusClasses = [
                                 <td><?= h($report['ticket']) ?></td>
                                 <td><?= h($report['reporter_name']) ?></td>
                                 <td><?= h($report['title']) ?></td>
-                                <td><?= h($report['issue']) ?></td>
                                 <td><?= h(date('d M Y', strtotime($report['reported_at']))) ?></td>
                                 <td><?= h($report['location']) ?></td>
                                 <td><?= h($report['technician_name'] ?? '-') ?></td>
+                                <td><span class="badge <?= h('urgency-' . strtolower($report['urgency'])) ?>"><?= h($report['urgency']) ?></span></td>
                                 <td><span class="badge <?= h($statusClasses[$report['status']] ?? 'status-ditolak') ?>"><?= h($report['status']) ?></span></td>
                             </tr>
                         <?php endforeach; ?>
@@ -279,5 +261,7 @@ $statusClasses = [
             </div>
         </div>
     </main>
+    <?php include __DIR__ . '/../includes/footer.php'; ?>
+    <script src="../assets/js/live-updates.js"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/includes/auth.php';
+require_once __DIR__ . '/../Halaman/includes/auth.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
     header('Location: index.php');
@@ -7,13 +7,10 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
 }
 
 verifyCsrfToken();
-$_SESSION = [];
-
-if (ini_get('session.use_cookies')) {
-    $params = session_get_cookie_params();
-    setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+$tabId = authTabId();
+if ($tabId !== '' && isset($_SESSION['auth_tabs']) && is_array($_SESSION['auth_tabs'])) {
+    unset($_SESSION['auth_tabs'][$tabId]);
 }
 
-session_destroy();
-header('Location: index.php');
+header('Location: index.php' . ($tabId === '' ? '' : '?tab=' . rawurlencode($tabId)));
 exit;

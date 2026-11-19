@@ -3,4 +3,4 @@ ALTER TABLE reports
 
 ALTER TABLE reports
     ADD CONSTRAINT reports_status_check
-    CHECK (status IN ('Diterima', 'Dijadwalkan', 'Selesai', 'Ditolak'));
+    CHECK (status IN ('Menunggu Konfirmasi', 'Diterima', 'Dijadwalkan', 'Selesai', 'Ditolak'));

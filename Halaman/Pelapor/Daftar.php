@@ -49,7 +49,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
                 'role' => 'pelapor',
             ]);
 
-            header('Location: ../Login/index.php?registered=1');
+            header('Location: ../../Login/index.php?registered=1');
             exit;
         } catch (PDOException $e) {
             if ($e->getCode() === '23505') {
@@ -67,11 +67,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar Pelapor - Servitory</title>
-    <link rel="stylesheet" href="../assets/css/style.css">
+    <link rel="stylesheet" href="../assets/css/style.css?v=4">
 </head>
 <body>
     <main class="login-card">
-        <div class="logo-box" aria-hidden="true">S</div>
+        <div class="logo-box" aria-hidden="true"><img src="../assets/img/servitory-logo.png?v=2" alt=""></div>
         <h1 class="app-title">Buat akun Servitory<span class="brand-dot">.</span></h1>
         <p class="app-subtitle">Daftar sebagai pelapor fasilitas kampus</p>
 
@@ -108,22 +108,51 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" name="password" class="form-control" minlength="8"
-                    autocomplete="new-password" required>
+                <div class="password-input">
+                    <input type="password" id="password" name="password" class="form-control" minlength="8"
+                        autocomplete="new-password" required>
+                    <button class="password-toggle" type="button" data-toggle-password="password" aria-label="Tampilkan password" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path class="eye-slash" d="m3 3 18 18"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="password_confirmation">Konfirmasi password</label>
-                <input type="password" id="password_confirmation" name="password_confirmation" class="form-control"
-                    minlength="8" autocomplete="new-password" required>
+                <div class="password-input">
+                    <input type="password" id="password_confirmation" name="password_confirmation" class="form-control"
+                        minlength="8" autocomplete="new-password" required>
+                    <button class="password-toggle" type="button" data-toggle-password="password_confirmation" aria-label="Tampilkan password" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path class="eye-slash" d="m3 3 18 18"></path>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <button type="submit" class="btn-login">Daftar</button>
         </form>
 
         <div class="register-link">
-            Sudah punya akun? <a href="../Login/index.php">Masuk</a>
+            Sudah punya akun? <a href="../../Login/index.php">Masuk</a>
         </div>
     </main>
+    <script>
+        document.querySelectorAll('[data-toggle-password]').forEach(function(button) {
+            button.addEventListener('click', function() {
+                const password = document.getElementById(button.dataset.togglePassword);
+                const isVisible = password.type === 'text';
+                password.type = isVisible ? 'password' : 'text';
+                button.setAttribute('aria-pressed', String(!isVisible));
+                button.setAttribute('aria-label', isVisible ? 'Tampilkan password' : 'Sembunyikan password');
+            });
+        });
+    </script>
 </body>
 </html>

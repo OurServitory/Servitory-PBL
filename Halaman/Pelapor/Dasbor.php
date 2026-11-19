@@ -3,39 +3,91 @@ require_once __DIR__ . '/../includes/koneksi.php';
 require_once __DIR__ . '/../includes/auth.php';
 requireRole('pelapor');
 
-$reporterId = (int) $_SESSION['user_id'];
+$currentUser = currentUser();
+$tabId = authTabId();
+$reporterId = (int) $currentUser['id'];
 $error = '';
+$locations = [
+    'R.05.01 - R.T 1',
+    'R.05.02 - R.T 2',
+    'R.05.03 - R.T 3',
+    'R.05.04 - R.T 4',
+    'R.05.05 - R.T 5',
+    'R.05.06 - R.T 6',
+    'R.05.07 - R.T 7',
+    'R.05.08 - Lab. Proyek 1',
+    'R.05.10 - R. Teknisi',
+    'R.06.01 - R. Dosen 1',
+    'R.06.02 - R. Dosen 2',
+    'R.06.03 - R. Dosen 3',
+    'R.06.04 - R. Dosen 4',
+    'R.06.05 - R. Jurusan TI',
+    'R.06.06 - R. Dosen 5',
+    'R.06.07 - R. Program Studi',
+    'R.06.08 - R. Dosen 6',
+    'R.06.13 - Library',
+    'R.06.14 - R. Arsip',
+    'R.06.15 - LSI 1',
+    'R.06.16 - LSI 2',
+    'R.06.17 - LSI 3',
+    'R.06.18 - Lab. Proyek 2',
+    'R.06.19 - Lab. Proyek 3',
+    'R.06.20 - R. Ecosystem',
+    'R.07.01 - LP 1',
+    'R.07.02 - LP 2',
+    'R.07.03 - LP 3',
+    'R.07.04 - LP 4',
+    'R.07.05 - LP 5',
+    'R.07.06 - LP 6',
+    'R.07.07 - Lab. Komputasi Jaringan 1',
+    'R.07.08 - LP 7',
+    'R.07.10 - R. Teknisi',
+    'R.07.12 - Kantin',
+    'R.07.13 - Lab. Komputasi Jaringan 2',
+    'R.07.14 - LP 8',
+    'R.07.15 - Lab. Komputasi Jaringan 3',
+    'R.07.16 - Lab. Visual Komputer 1',
+    'R.07.17 - R. Kelas Teori 8',
+    'R.07.18 - Lab. Visual Komputer 2',
+    'R.07.19 - Lab. Proyek 4',
+    'R.07.20 - R. Kecerdasan Buatan 1',
+    'R.08.01 - R. Kelas Teori',
+    'R.08.04 - R. Teknisi',
+    'R.08.05 - R. Kelas Teori 9',
+    'R.08.06 - R. Kelas Teori 10',
+
+];
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     verifyCsrfToken();
     $title = trim($_POST['title'] ?? '');
     $location = trim($_POST['location'] ?? '');
-    $issue = trim($_POST['issue'] ?? '');
     $description = trim($_POST['description'] ?? '');
 
     if ($title === '' || mb_strlen($title) > 150 || $location === '' || mb_strlen($location) > 100
-        || $issue === '' || mb_strlen($issue) > 100 || $description === '') {
+        || $description === '') {
         $error = 'Lengkapi semua kolom dengan panjang yang sesuai.';
+    } elseif (!in_array($location, $locations, true)) {
+        $error = 'Pilih lokasi dari daftar nama ruang yang tersedia.';
     } else {
         $statement = $pdo->prepare(
-            'INSERT INTO reports (ticket, title, location, issue, description, reporter_id)
-             VALUES (:ticket, :title, :location, :issue, :description, :reporter_id)'
+            'INSERT INTO reports (ticket, title, location, description, reporter_id)
+             VALUES (:ticket, :title, :location, :description, :reporter_id)'
         );
         $statement->execute([
             'ticket' => 'TKT-' . strtoupper(bin2hex(random_bytes(4))),
             'title' => $title,
             'location' => $location,
-            'issue' => $issue,
             'description' => $description,
             'reporter_id' => $reporterId,
         ]);
-        header('Location: Dasbor.php?submitted=1');
+        header('Location: ' . tabUrl('Dasbor.php?submitted=1'));
         exit;
     }
 }
 
 $statement = $pdo->prepare(
-    'SELECT ticket, title, reported_at, location, status
+    'SELECT ticket, title, reported_at, location, status, urgency
      FROM reports
      WHERE reporter_id = :reporter_id
      ORDER BY reported_at DESC'
@@ -44,13 +96,14 @@ $statement->execute(['reporter_id' => $reporterId]);
 $reports = $statement->fetchAll(PDO::FETCH_ASSOC);
 $statusClasses = [
     'Diterima' => 'status-diterima',
+    'Menunggu Konfirmasi' => 'status-menunggu-konfirmasi',
     'Dijadwalkan' => 'status-dijadwalkan',
     'Selesai' => 'status-selesai',
     'Ditolak' => 'status-ditolak',
 ];
 $activeReports = count(array_filter($reports, static fn ($report) => $report['status'] !== 'Selesai' && $report['status'] !== 'Ditolak'));
 $completedReports = count(array_filter($reports, static fn ($report) => $report['status'] === 'Selesai'));
-$displayName = (string) $_SESSION['user_name'];
+$displayName = (string) $currentUser['name'];
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -58,35 +111,24 @@ $displayName = (string) $_SESSION['user_name'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pelapor / Dasbor - Servitory</title>
-    <link rel="stylesheet" href="../assets/css/dasbor.css">
+    <link rel="stylesheet" href="../assets/css/dasbor.css?v=6">
+    <link rel="stylesheet" href="../assets/css/app-polish.css?v=3">
 </head>
 <body>
-    <header class="navbar">
-        <div class="nav-brand">
-            <div class="logo-box">S</div>
-            <span class="brand-title">Servitory<span class="brand-dot">.</span></span>
-        </div>
-        <div class="nav-user">
-            <div class="user-avatar" aria-hidden="true"><?= h(mb_strtoupper(mb_substr($displayName, 0, 1))) ?></div>
-            <div class="user-info">
-                <span class="user-name"><?= h($displayName) ?></span>
-                <span class="user-role">Pelapor</span>
-            </div>
-            <form class="logout-form" method="post" action="../Keluar.php">
-                <input type="hidden" name="csrf_token" value="<?= h(csrfToken()) ?>">
-                <button class="btn-logout" type="submit">Keluar</button>
-            </form>
-        </div>
-    </header>
+    <?php
+    $headerUserName = $displayName;
+    $headerRoleLabel = 'Pelapor';
+    include __DIR__ . '/../includes/header.php';
+    ?>
 
-    <main class="main-container">
+    <main class="main-container" data-live-updates>
         <section class="welcome-banner">
             <div>
                 <span class="eyebrow">PORTAL PELAPOR</span>
                 <h1>Halo, <?= h(explode(' ', $displayName)[0]) ?> <span aria-hidden="true">👋</span></h1>
                 <p>Pantau laporan fasilitas dan peralatan Anda dengan mudah.</p>
             </div>
-            <div class="welcome-mark" aria-hidden="true">S</div>
+            <div class="welcome-mark" aria-hidden="true"><img src="../assets/img/servitory-logo.png?v=2" alt=""></div>
         </section>
 
         <?php if (isset($_GET['submitted'])): ?>
@@ -117,7 +159,7 @@ $displayName = (string) $_SESSION['user_name'];
                 <strong>Buat laporan baru</strong>
                 <span>Laporkan kendala peralatan atau fasilitas di ruangan Anda.</span>
             </span>
-            <span class="create-report-arrow" aria-hidden="true">→</span>
+            <span class="create-report-arrow" aria-hidden="true"></span>
         </button>
 
         <section class="history-section">
@@ -133,18 +175,25 @@ $displayName = (string) $_SESSION['user_name'];
             <div class="table-responsive">
                 <table class="report-table">
                     <thead>
-                        <tr><th>Nomor Tiket</th><th>Masalah</th><th>Tanggal</th><th>Lokasi</th><th>Status</th></tr>
+                        <tr><th>Nomor Tiket</th><th>Masalah</th><th>Tanggal</th><th>Lokasi</th><th>Urgensi</th><th>Status</th></tr>
                     </thead>
                     <tbody>
                         <?php if ($reports === []): ?>
-                            <tr><td colspan="5">Anda belum mengirim laporan.</td></tr>
+                            <tr><td colspan="6">Anda belum mengirim laporan.</td></tr>
                         <?php else: ?>
                             <?php foreach ($reports as $report): ?>
                                 <tr>
                                     <td class="ticket-cell"><?= h($report['ticket']) ?></td>
-                                    <td class="issue-cell"><?= h($report['title']) ?></td>
+                                    <td class="title-cell"><?= h($report['title']) ?></td>
                                     <td><?= h(date('d M Y', strtotime($report['reported_at']))) ?></td>
                                     <td><?= h($report['location']) ?></td>
+                                    <td>
+                                        <?php if ($report['urgency'] === null): ?>
+                                            -
+                                        <?php else: ?>
+                                            <span class="urgency-<?= h(strtolower($report['urgency'])) ?>"><?= h($report['urgency']) ?></span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td><span class="badge <?= h($statusClasses[$report['status']] ?? 'status-ditolak') ?>"><?= h($report['status']) ?></span></td>
                                 </tr>
                             <?php endforeach; ?>
@@ -167,21 +216,23 @@ $displayName = (string) $_SESSION['user_name'];
 
             <form class="modal-form" method="post" action="Dasbor.php">
                 <input type="hidden" name="csrf_token" value="<?= h(csrfToken()) ?>">
+                <input type="hidden" name="tab" value="<?= h($tabId) ?>">
                 <div class="form-group">
-                    <label for="judul">Judul Laporan</label>
+                    <label for="judul">Perangkat Yang Bermasalah <span class="required-mark" aria-hidden="true">*</span></label>
                     <input type="text" id="judul" name="title" class="form-control" maxlength="150" placeholder="Contoh: Proyektor tidak menyala" required>
                 </div>
                 <div class="form-group">
-                    <label for="lokasi">Lokasi Ruang</label>
-                    <input type="text" id="lokasi" name="location" class="form-control" maxlength="100" placeholder="Contoh: RT 01" required>
-                </div>
-                <div class="form-group">
-                    <label for="kendala">Jenis Kendala</label>
-                    <input type="text" id="kendala" name="issue" class="form-control" maxlength="100" placeholder="Contoh: Peralatan rusak" required>
+                    <label for="lokasi">Lokasi / nama ruang <span class="required-mark" aria-hidden="true">*</span></label>
+                    <input type="text" id="lokasi" name="location" class="form-control" list="room-suggestions" maxlength="100" placeholder="Cari kode atau nama ruang" autocomplete="off" required>
+                    <datalist id="room-suggestions">
+                        <?php foreach ($locations as $locationOption): ?>
+                            <option value="<?= h($locationOption) ?>">
+                        <?php endforeach; ?>
+                    </datalist>
                 </div>
                 <div class="form-group">
                     <label for="deskripsi">Deskripsi Masalah</label>
-                    <textarea id="deskripsi" name="description" class="form-control textarea-control" placeholder="Jelaskan kendala yang terjadi..." rows="4" required></textarea>
+                    <textarea id="deskripsi" name="description" class="form-control textarea-control" placeholder="Jelaskan kendala yang terjadi..." rows="4"></textarea>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" id="cancelBtn">Batal</button>
@@ -191,9 +242,10 @@ $displayName = (string) $_SESSION['user_name'];
         </div>
     </div>
 
+    <?php include __DIR__ . '/../includes/footer.php'; ?>
+
     <script>
         const modal = document.getElementById('reportModal');
-        const openBtn = document.getElementById('openModalBtn');
         const closeBtn = document.getElementById('closeModalBtn');
         const cancelBtn = document.getElementById('cancelBtn');
 
@@ -203,7 +255,10 @@ $displayName = (string) $_SESSION['user_name'];
             document.body.classList.remove('modal-open');
         }
 
-        openBtn.addEventListener('click', function() {
+        document.addEventListener('click', function(event) {
+            const target = event.target instanceof Element ? event.target.closest('#openModalBtn') : null;
+            if (!target) return;
+
             modal.style.display = 'flex';
             modal.setAttribute('aria-hidden', 'false');
             document.body.classList.add('modal-open');
@@ -218,5 +273,6 @@ $displayName = (string) $_SESSION['user_name'];
             if (event.key === 'Escape' && modal.style.display === 'flex') closeModal();
         });
     </script>
+    <script src="../assets/js/live-updates.js"></script>
 </body>
 </html>

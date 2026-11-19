@@ -1,10 +1,12 @@
 /* Pengaturan Dasar & Variabel */
 :root {
-    --primary-color: #2c3e50;
-    --bg-color: #f4f7f6;
-    --border-color: #dcdcdc;
-    --text-main: #333333;
-    --text-muted: #777777;
+    --primary-color: #0b2a4a;
+    --secondary-color: #07999b;
+    --accent-color: #f58220;
+    --bg-color: #f3f7f8;
+    --border-color: #dce7e9;
+    --text-main: #172b3c;
+    --text-muted: #647887;
     --card-bg: #ffffff;
 }
 
@@ -39,7 +41,7 @@ body {
 .logo-box {
     width: 35px;
     height: 35px;
-    background-color: #cccccc;
+    background-color: #fff;
     border-radius: 4px;
 }
 
@@ -58,7 +60,7 @@ body {
 .user-avatar {
     width: 35px;
     height: 35px;
-    background-color: #cccccc;
+    background-color: #dff2f2;
     border-radius: 50%;
 }
 
@@ -104,7 +106,7 @@ body {
 /* Kotak Buat Laporan Baru */
 .create-report-card {
     background-color: var(--card-bg);
-    border: 2px dashed #99c2ff;
+    border: 2px dashed #79bfc0;
     border-radius: 6px;
     padding: 35px 20px;
     text-align: center;
@@ -346,18 +348,20 @@ body {
 
 /* Dashboard refresh */
 :root {
-    --primary-color: #3157d5;
-    --bg-color: #f4f7fc;
-    --border-color: #e6eaf2;
-    --text-main: #17233c;
-    --text-muted: #75819a;
+    --primary-color: #0b2a4a;
+    --secondary-color: #07999b;
+    --accent-color: #f58220;
+    --bg-color: #f3f7f8;
+    --border-color: #dce7e9;
+    --text-main: #172b3c;
+    --text-muted: #647887;
     --card-bg: #ffffff;
 }
 
 body {
     min-height: 100vh;
     background:
-        radial-gradient(ellipse at 12% 0%, rgba(213, 226, 255, 0.52), transparent 34rem),
+        radial-gradient(ellipse at 12% 0%, rgba(7, 153, 155, 0.08), transparent 34rem),
         var(--bg-color);
 }
 
@@ -376,11 +380,15 @@ body {
     place-items: center;
     width: 42px;
     height: 42px;
-    border-radius: 13px;
-    background: linear-gradient(145deg, #5276ed, #3157d5);
-    color: white;
-    font-size: 19px;
-    box-shadow: 0 7px 16px rgba(49, 87, 213, 0.22);
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.logo-box img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 .brand-title {
@@ -389,7 +397,7 @@ body {
 }
 
 .brand-dot {
-    color: #5276ed;
+    color: var(--accent-color);
 }
 
 .nav-user {
@@ -401,8 +409,8 @@ body {
     place-items: center;
     width: 40px;
     height: 40px;
-    background: #e8edff;
-    color: #3157d5;
+    background: #e1f4f3;
+    color: #087f82;
     font-size: 14px;
     font-weight: 700;
 }
@@ -446,8 +454,8 @@ body {
     overflow: hidden;
     border-radius: 22px;
     color: white;
-    background: linear-gradient(115deg, #2848b8, #5276ed 72%, #7893f4);
-    box-shadow: 0 16px 34px rgba(49, 87, 213, 0.2);
+    background: linear-gradient(115deg, #0b2a4a, #087b88 72%, #07999b);
+    box-shadow: 0 16px 34px rgba(11, 42, 74, 0.18);
 }
 
 .welcome-banner::after {
@@ -462,7 +470,7 @@ body {
 }
 
 .welcome-banner .eyebrow {
-    color: #dbe4ff;
+    color: #c5e5e5;
 }
 
 .welcome-banner h1 {
@@ -485,10 +493,14 @@ body {
     border: 1px solid rgba(255, 255, 255, 0.26);
     border-radius: 30px;
     background: rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 46px;
-    font-weight: 700;
     transform: rotate(8deg);
+}
+
+.welcome-mark img {
+    width: 68px;
+    height: 68px;
+    border-radius: 12px;
+    transform: rotate(-8deg);
 }
 
 .eyebrow {
@@ -529,8 +541,8 @@ body {
 }
 
 .icon-total {
-    background: #edf1ff;
-    color: #4568dd;
+    background: #e1f4f3;
+    color: #087f82;
 }
 
 .icon-progress {
@@ -539,8 +551,8 @@ body {
 }
 
 .icon-done {
-    background: #e5f7ef;
-    color: #18845b;
+    background: #e1f4f3;
+    color: #087f82;
 }
 
 .summary-card p {
@@ -556,13 +568,17 @@ body {
 
 .create-report-card {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    width: 100%;
-    min-height: 102px;
-    padding: 20px 24px;
-    border: 1px solid #d9e2ff;
+    justify-content: center;
+    gap: 12px;
+    width: min(480px, 100%);
+    margin: 0 auto;
+    min-height: 170px;
+    padding: 24px;
+    border: 1px solid #b8dcdd;
     border-radius: 16px;
-    background: linear-gradient(105deg, #f5f7ff, #fff);
+    background: linear-gradient(105deg, #edf8f8, #fff);
     color: var(--text-main);
     text-align: left;
     cursor: pointer;
@@ -571,24 +587,26 @@ body {
 
 .create-report-card:hover {
     transform: translateY(-2px);
-    border-color: #b8c8ff;
-    box-shadow: 0 10px 24px rgba(49, 87, 213, 0.09);
+    border-color: #79bfc0;
+    box-shadow: 0 10px 24px rgba(7, 153, 155, 0.12);
 }
 
 .plus-icon {
     flex: 0 0 46px;
     width: 46px;
     height: 46px;
-    margin: 0 17px 0 0;
+    margin: 0;
     border: 0;
-    background: #e7edff;
-    color: #3157d5;
+    background: #dff2f2;
+    color: #087f82;
     font-size: 28px;
 }
 
 .create-report-copy {
     display: grid;
     gap: 5px;
+    justify-items: center;
+    text-align: center;
 }
 
 .create-report-copy strong {
@@ -601,9 +619,7 @@ body {
 }
 
 .create-report-arrow {
-    margin-left: auto;
-    color: #5276ed;
-    font-size: 24px;
+    display: none;
 }
 
 .history-section {
@@ -633,8 +649,8 @@ body {
 .report-count {
     padding: 7px 11px;
     border-radius: 20px;
-    background: #edf1ff;
-    color: #4568dd;
+    background: #e1f4f3;
+    color: #087f82;
     font-size: 11px;
     font-weight: 700;
 }
@@ -666,6 +682,26 @@ body {
 .status-ditolak {
     background: #fff0f0;
     color: #9b2525;
+}
+
+.status-menunggu-konfirmasi {
+    background: #fff0e1;
+    color: #a84c08;
+}
+
+.urgency-tinggi {
+    color: #9b2525;
+    font-weight: 700;
+}
+
+.urgency-menengah {
+    color: #a84c08;
+    font-weight: 700;
+}
+
+.urgency-rendah {
+    color: #087f82;
+    font-weight: 700;
 }
 
 .table-responsive {
@@ -701,12 +737,12 @@ body {
 }
 
 .ticket-cell {
-    color: #496bd8 !important;
+    color: #087f82 !important;
     font-size: 12px;
     font-weight: 700;
 }
 
-.issue-cell {
+.title-cell {
     color: var(--text-main) !important;
     font-weight: 600;
 }
@@ -769,6 +805,12 @@ body {
     font-size: 12px;
 }
 
+.required-mark {
+    margin-left: 2px;
+    color: #dc3545;
+    font-weight: 700;
+}
+
 .modal-form .form-control {
     padding: 11px 13px;
     border-color: #e1e6ef;
@@ -778,8 +820,8 @@ body {
 }
 
 .modal-form .form-control:focus {
-    border-color: #7893f4;
-    box-shadow: 0 0 0 3px rgba(82, 118, 237, 0.12);
+    border-color: #07999b;
+    box-shadow: 0 0 0 3px rgba(7, 153, 155, 0.14);
 }
 
 .modal-actions {
@@ -799,11 +841,11 @@ body {
 }
 
 .btn-submit {
-    background: #3157d5;
+    background: #07999b;
 }
 
 .btn-submit:hover {
-    background: #2748b8;
+    background: #087f82;
 }
 
 .modal-open {
@@ -814,7 +856,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-    outline: 3px solid rgba(82, 118, 237, 0.45);
+    outline: 3px solid rgba(245, 130, 32, 0.45);
     outline-offset: 2px;
 }
 
@@ -858,7 +900,11 @@ textarea:focus-visible {
         height: 64px;
         margin-right: 0;
         border-radius: 20px;
-        font-size: 30px;
+    }
+
+    .welcome-mark img {
+        width: 42px;
+        height: 42px;
     }
 
     .summary-grid {
@@ -925,33 +971,33 @@ textarea:focus-visible {
     }
 }
 
-/* Shared Servitory palette, matching the rest of the application. */
+/* Servitory brand palette: navy, teal, and orange. */
 :root {
-    --primary-color: #462500;
-    --bg-color: #f5f6f8;
-    --border-color: #e2e6ea;
-    --text-main: #2b2b2b;
-    --text-muted: #667085;
+    --primary-color: #0b2a4a;
+    --secondary-color: #07999b;
+    --accent-color: #f58220;
+    --bg-color: #f3f7f8;
+    --border-color: #dce7e9;
+    --text-main: #172b3c;
+    --text-muted: #647887;
     --card-bg: #ffffff;
 }
 
 body {
     background:
-        radial-gradient(ellipse at 12% 0%, rgba(255, 235, 211, 0.55), transparent 34rem),
+        radial-gradient(ellipse at 12% 0%, rgba(7, 153, 155, 0.08), transparent 34rem),
         var(--bg-color);
 }
 
 .navbar {
     color: #fff;
-    background: #462500;
-    border-bottom-color: #5a3514;
-    box-shadow: 0 4px 14px rgba(70, 37, 0, 0.12);
+    background: var(--primary-color);
+    border-bottom-color: #183b5c;
+    box-shadow: 0 4px 14px rgba(11, 42, 74, 0.14);
 }
 
 .logo-box {
     background: #fff;
-    color: #462500;
-    box-shadow: none;
 }
 
 .brand-title,
@@ -960,11 +1006,11 @@ body {
 }
 
 .brand-dot {
-    color: #f3a94b;
+    color: var(--accent-color);
 }
 
 .user-role {
-    color: #eadac8;
+    color: #c4d5df;
 }
 
 .user-avatar {
@@ -982,47 +1028,52 @@ body {
 }
 
 .welcome-banner {
-    background: linear-gradient(115deg, #462500, #75420e 72%, #a86116);
-    box-shadow: 0 16px 34px rgba(70, 37, 0, 0.16);
+    background: linear-gradient(115deg, #0b2a4a, #087b88 72%, #07999b);
+    box-shadow: 0 16px 34px rgba(11, 42, 74, 0.18);
 }
 
 .welcome-banner .eyebrow {
-    color: #f6d8b2;
+    color: #ffd2a8;
 }
 
 .icon-total {
-    background: #fff0df;
-    color: #8a501d;
+    background: #e1f4f3;
+    color: #087f82;
 }
 
 .icon-progress {
-    background: #fff4df;
-    color: #a66a08;
+    background: #fff0e1;
+    color: #c35d0b;
+}
+
+.icon-done {
+    background: #e1f4f3;
+    color: #087f82;
 }
 
 .create-report-card {
-    border-color: #e9c9a7;
-    background: linear-gradient(105deg, #fff8ef, #fff);
+    border-color: #b8dcdd;
+    background: linear-gradient(105deg, #edf8f8, #fff);
 }
 
 .create-report-card:hover {
-    border-color: #d9a56d;
-    box-shadow: 0 10px 24px rgba(138, 80, 29, 0.1);
+    border-color: #79bfc0;
+    box-shadow: 0 10px 24px rgba(7, 153, 155, 0.12);
 }
 
 .plus-icon {
-    background: #fff0df;
-    color: #75420e;
+    background: #dff2f2;
+    color: #087f82;
 }
 
 .create-report-arrow,
 .ticket-cell {
-    color: #8a501d !important;
+    color: #087f82 !important;
 }
 
 .report-count {
-    background: #fff0df;
-    color: #75420e;
+    background: #e1f4f3;
+    color: #087f82;
 }
 
 .table-responsive {
@@ -1032,30 +1083,41 @@ body {
 }
 
 .report-table th {
-    background: #462500;
+    background: var(--primary-color);
     color: #fff;
 }
 
 .report-table tbody tr:hover {
-    background: #fffaf4;
+    background: #f0f8f8;
+}
+
+.status-diterima,
+.status-selesai {
+    background: #e1f4f3;
+    color: #087f82;
+}
+
+.status-dijadwalkan {
+    background: #fff0e1;
+    color: #a84c08;
 }
 
 .modal-form .form-control:focus {
-    border-color: #8a501d;
-    box-shadow: 0 0 0 3px rgba(138, 80, 29, 0.12);
+    border-color: var(--secondary-color);
+    box-shadow: 0 0 0 3px rgba(7, 153, 155, 0.14);
 }
 
 .btn-submit {
-    background: #462500;
+    background: var(--secondary-color);
 }
 
 .btn-submit:hover {
-    background: #321a00;
+    background: #087f82;
 }
 
 button:focus-visible,
 a:focus-visible,
 input:focus-visible,
 textarea:focus-visible {
-    outline-color: rgba(209, 108, 0, 0.4);
+    outline-color: rgba(245, 130, 32, 0.45);
 }

@@ -145,22 +145,22 @@
 }
 
 .filter-input:focus {
-    border-color: #8a501d;
-    box-shadow: 0 0 0 3px rgba(138, 80, 29, 0.12);
+    border-color: #07999b;
+    box-shadow: 0 0 0 3px rgba(7, 153, 155, 0.14);
 }
 
 .btn-reset {
-    color: #462500;
+    color: #0b2a4a;
 }
 
 .btn-filter {
-    border-color: #462500;
+    border-color: #07999b;
     border-radius: 7px;
-    background: #462500;
+    background: #07999b;
 }
 
 .btn-filter:hover {
-    background: #321a00;
+    background: #087f82;
 }
 
 .table-footer {
@@ -170,8 +170,8 @@
 }
 
 .page-btn.active {
-    background: #462500;
-    border-color: #462500;
+    background: #07999b;
+    border-color: #07999b;
 }
 
 .btn-ekspor {
@@ -200,6 +200,6 @@
 .btn-reset:focus-visible,
 .btn-ekspor:focus-visible,
 .page-btn:focus-visible {
-    outline: 3px solid rgba(209, 108, 0, 0.35);
+    outline: 3px solid rgba(245, 130, 32, 0.4);
     outline-offset: 2px;
 }
