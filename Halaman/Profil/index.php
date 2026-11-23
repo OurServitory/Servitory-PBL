@@ -81,7 +81,6 @@ $dashboardByRole = [
     <main class="main-container profile-page">
         <div class="profile-heading">
             <div>
-                <span class="eyebrow">AKUN SAYA</span>
                 <h1>Profil pengguna</h1>
                 <p>Informasi akun Anda di Servitory.</p>
             </div>
