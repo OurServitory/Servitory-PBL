@@ -1,9 +1,10 @@
 <?php
-$host = "localhost";
-$port = "5432";
-$db = "servitory";
-$user = "postgres";
-$pass = "postgres";
+$host = getenv('DB_HOST') ?: 'localhost';
+$port = getenv('DB_PORT') ?: '5432';
+$db   = getenv('DB_NAME') ?: 'servitory';
+$user = getenv('DB_USER') ?: 'postgres';
+$pass = getenv('DB_PASS') ?: 'postgres';
+$sslmode = getenv('DB_SSLMODE') ?: 'require';
 
 try {
     $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$db", $user, $pass);
