@@ -9,5 +9,10 @@ try {
     $pdo = new PDO("pgsql:host=$host;port=$port;dbname=$db", $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    die("Koneksi database gagal: " . $e->getMessage());
+    $message = "Koneksi database gagal: " . $e->getMessage();
+    if (PHP_SAPI === 'cli') {
+        fwrite(STDERR, $message . PHP_EOL);
+        exit(1);
+    }
+    die($message);
 }

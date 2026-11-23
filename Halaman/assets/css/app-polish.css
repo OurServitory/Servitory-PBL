@@ -73,11 +73,30 @@ body {
     flex: 0 0 40px;
     width: 40px;
     height: 40px;
+    overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.16);
     border-radius: 50%;
     background: rgba(255, 255, 255, 0.13);
     color: #fff;
     font-weight: 700;
+}
+
+.user-profile-link {
+    display: block;
+    flex: 0 0 40px;
+    border-radius: 50%;
+    text-decoration: none;
+}
+
+.user-profile-link:hover .user-avatar {
+    border-color: rgba(255, 255, 255, 0.65);
+}
+
+.user-avatar img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .user-name {
@@ -191,6 +210,17 @@ body {
 .report-detail,
 .section-heading p {
     color: var(--text-muted);
+}
+
+.evidence-link {
+    color: var(--secondary-color);
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+}
+
+.evidence-link:hover {
+    color: var(--primary-color);
 }
 
 .reports-grid {
@@ -320,6 +350,375 @@ body {
     line-height: 1.6;
 }
 
+.dashboard-hero {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 112px;
+    margin-bottom: 20px;
+    padding: 22px 28px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 18px;
+    background: linear-gradient(118deg, #102b46 0%, #126774 68%, #078b8d 100%);
+    box-shadow: 0 16px 34px rgba(16, 43, 70, 0.15);
+}
+
+.dashboard-hero::after {
+    position: absolute;
+    right: 12%;
+    bottom: -96px;
+    width: 210px;
+    height: 210px;
+    border: 24px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    content: "";
+    pointer-events: none;
+}
+
+.dashboard-hero > * {
+    position: relative;
+    z-index: 1;
+}
+
+.dashboard-hero .eyebrow {
+    color: #b7eeea;
+}
+
+.dashboard-hero h1,
+.dashboard-hero h2 {
+    margin-top: 5px;
+    color: #fff;
+    font-size: clamp(22px, 3vw, 29px);
+    letter-spacing: -0.5px;
+}
+
+.dashboard-hero .info-text {
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    color: #effcfb;
+    font-weight: 600;
+}
+
+.coordinator-hero {
+    background: linear-gradient(118deg, #102b46 0%, #12576f 62%, #078b8d 100%);
+}
+
+.technician-hero {
+    background: linear-gradient(118deg, #102b46 0%, #15517a 62%, #128c8d 100%);
+}
+
+.coordinator-dashboard .report-card {
+    border-top: 3px solid #078b8d;
+}
+
+.coordinator-dashboard .confirmation-form {
+    padding: 14px;
+    border: 1px solid #d9ece9;
+    border-radius: 12px;
+    background: linear-gradient(120deg, #f0faf8, #f4f6ff);
+}
+
+.coordinator-dashboard .btn-confirm {
+    box-shadow: 0 5px 12px rgba(7, 139, 141, 0.14);
+}
+
+.coordinator-history-section {
+    padding: clamp(18px, 3vw, 26px);
+    border: 1px solid #dfeaf0;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #fff 20%, #f2f9fb 100%);
+    box-shadow: 0 14px 34px rgba(16, 43, 70, 0.07);
+}
+
+.coordinator-history-heading {
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding: 18px 20px;
+    border: 1px solid #d9e8ed;
+    border-left: 4px solid var(--accent-color);
+    border-radius: 14px;
+    background: linear-gradient(115deg, #f3faf9, #f2f5fc);
+}
+
+.coordinator-history-heading .eyebrow {
+    color: var(--secondary-color);
+}
+
+.coordinator-history-heading h2 {
+    margin: 4px 0;
+    color: var(--primary-color);
+}
+
+.coordinator-history-description {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.coordinator-history-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    padding: 9px 13px;
+    border: 1px solid #cce8e4;
+    border-radius: 999px;
+    background: linear-gradient(105deg, #dff5f1, #eaf0ff);
+    color: #08736e;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.coordinator-history-count strong {
+    font-size: 16px;
+}
+
+.coordinator-history-section .table-responsive {
+    border-color: #dce9ed;
+    border-radius: 14px;
+    box-shadow: 0 8px 22px rgba(16, 43, 70, 0.06);
+}
+
+.coordinator-history-section .report-table th {
+    background: linear-gradient(105deg, #102b46, #176b72);
+    color: #fff;
+    letter-spacing: 0.35px;
+}
+
+.coordinator-history-section .report-table td {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    vertical-align: middle;
+}
+
+.coordinator-history-section .report-table tbody tr:nth-child(even) {
+    background: #f3f9f8;
+}
+
+.coordinator-history-section .report-table tbody tr:hover {
+    background: #e8f6f4;
+}
+
+.coordinator-history-ticket {
+    color: var(--primary-color);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.coordinator-history-section .report-table td[colspan="7"] {
+    padding: 26px 15px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.technician-history-hero .technician-history-intro {
+    margin: 4px 0 0;
+    color: #d7e8ee;
+    font-size: 13px;
+}
+
+.technician-history-hero .btn-ekspor {
+    padding: 10px 16px;
+    border-color: rgba(255, 255, 255, 0.6);
+    border-radius: 9px;
+    background: #fff;
+    color: var(--primary-color);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.technician-history-hero .btn-ekspor:hover {
+    border-color: #d7f0ed;
+    background: #eaf8f6;
+    color: #086c6d;
+}
+
+.technician-history-filters {
+    padding: 20px 22px;
+    border-radius: 16px;
+    background: linear-gradient(145deg, #fff, #f8fbfc);
+}
+
+.technician-history-filter-heading {
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e0eaef;
+}
+
+.technician-history-filter-heading h3 {
+    margin: 0;
+    color: var(--primary-color);
+    font-size: 15px;
+}
+
+.technician-history-filter-heading p {
+    margin: 3px 0 0;
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.technician-history-section {
+    padding: clamp(18px, 3vw, 26px);
+    border: 1px solid #dfeaf0;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #fff 20%, #f2f9fb 100%);
+    box-shadow: 0 14px 34px rgba(16, 43, 70, 0.07);
+}
+
+.technician-history-heading {
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 18px;
+    padding: 18px 20px;
+    border: 1px solid #d9e8ed;
+    border-left: 4px solid var(--accent-color);
+    border-radius: 14px;
+    background: linear-gradient(115deg, #f3faf9, #f2f5fc);
+}
+
+.technician-history-heading .eyebrow {
+    color: var(--secondary-color);
+}
+
+.technician-history-heading h2 {
+    margin: 4px 0 0;
+    color: var(--primary-color);
+}
+
+.technician-history-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    padding: 9px 13px;
+    border: 1px solid #cce8e4;
+    border-radius: 999px;
+    background: linear-gradient(105deg, #dff5f1, #eaf0ff);
+    color: #08736e;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.technician-history-count strong {
+    font-size: 16px;
+}
+
+.technician-history-section .table-responsive {
+    border-color: #dce9ed;
+    border-radius: 14px;
+    box-shadow: 0 8px 22px rgba(16, 43, 70, 0.06);
+}
+
+.technician-history-section .report-table th {
+    background: linear-gradient(105deg, #102b46, #176b72);
+    color: #fff;
+    letter-spacing: 0.35px;
+}
+
+.technician-history-section .report-table td {
+    padding-top: 15px;
+    padding-bottom: 15px;
+    vertical-align: middle;
+}
+
+.technician-history-section .report-table tbody tr:nth-child(even) {
+    background: #f3f9f8;
+}
+
+.technician-history-section .report-table tbody tr:hover {
+    background: #e8f6f4;
+}
+
+.technician-history-ticket {
+    color: var(--primary-color);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.technician-history-section .report-table td[colspan="10"] {
+    padding: 26px 15px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.technician-history-section .table-footer {
+    border-color: #e0eaef;
+    background: #fbfdfe;
+}
+
+.technician-dashboard .report-card {
+    border-left: 4px solid var(--accent-color);
+    background: linear-gradient(145deg, #fff, #fbfdff);
+}
+
+.technician-dashboard .scheduling-section {
+    border-left: 5px solid var(--accent-color);
+    background: linear-gradient(115deg, #fff8eb, #eff9f8);
+}
+
+.technician-dashboard .workflow-arrow {
+    color: var(--accent-color);
+    font-size: 17px;
+    font-weight: 800;
+}
+
+.reporter-history-section {
+    padding: clamp(18px, 3vw, 26px);
+    border: 1px solid #dfeaf0;
+    border-radius: 20px;
+    background: linear-gradient(145deg, #fff 20%, #f2f9fb 100%);
+    box-shadow: 0 14px 34px rgba(16, 43, 70, 0.07);
+}
+
+.reporter-history-section .section-heading {
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e0eaef;
+}
+
+.reporter-history-section .section-heading > div {
+    padding-left: 14px;
+    border-left: 4px solid var(--accent-color);
+}
+
+.reporter-history-section .report-count {
+    border: 1px solid #cce8e4;
+    background: linear-gradient(105deg, #dff5f1, #eaf0ff);
+    color: #08736e;
+}
+
+.reporter-history-section .table-responsive {
+    border-color: #dce9ed;
+    border-radius: 14px;
+    box-shadow: 0 8px 22px rgba(16, 43, 70, 0.06);
+}
+
+.reporter-history-section .report-table th {
+    background: linear-gradient(105deg, #102b46, #176b72);
+    color: #fff;
+    letter-spacing: 0.55px;
+}
+
+.reporter-history-section .report-table td {
+    padding-top: 16px;
+    padding-bottom: 16px;
+    vertical-align: middle;
+}
+
+.reporter-history-section .report-table tbody tr:nth-child(even) {
+    background: #f3f9f8;
+}
+
+.reporter-history-section .report-table tbody tr:hover {
+    background: #e8f6f4;
+}
+
 .app-footer {
     border-top: 1px solid var(--border-color);
     background: rgba(255, 255, 255, 0.72);
@@ -380,6 +779,29 @@ summary:focus-visible {
     .section-header-top {
         align-items: flex-start;
         gap: 8px;
+    }
+
+    .dashboard-hero {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+        padding: 20px;
+    }
+
+    .reporter-history-section .section-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .coordinator-history-heading {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .technician-history-heading {
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .app-footer-inner {

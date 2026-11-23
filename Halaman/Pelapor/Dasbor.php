@@ -1,12 +1,14 @@
 <?php
 require_once __DIR__ . '/../includes/koneksi.php';
 require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/report_evidence.php';
 requireRole('pelapor');
 
 $currentUser = currentUser();
 $tabId = authTabId();
 $reporterId = (int) $currentUser['id'];
 $error = '';
+$maxEvidenceBytes = 5 * 1024 * 1024;
 $locations = [
     'RT 1',
     'RT 2',
@@ -62,30 +64,64 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $location = trim($_POST['location'] ?? '');
     $description = trim($_POST['description'] ?? '');
 
+    $evidenceHex = null;
+    $evidenceMime = null;
+
     if ($title === '' || mb_strlen($title) > 150 || $location === '' || mb_strlen($location) > 100
         || $description === '') {
         $error = 'Lengkapi semua kolom dengan panjang yang sesuai.';
     } elseif (!in_array($location, $locations, true)) {
         $error = 'Pilih lokasi dari daftar nama ruang yang tersedia.';
     } else {
-        $statement = $pdo->prepare(
-            'INSERT INTO reports (ticket, title, location, description, reporter_id)
-             VALUES (:ticket, :title, :location, :description, :reporter_id)'
-        );
-        $statement->execute([
-            'ticket' => 'TKT-' . strtoupper(bin2hex(random_bytes(4))),
-            'title' => $title,
-            'location' => $location,
-            'description' => $description,
-            'reporter_id' => $reporterId,
-        ]);
-        header('Location: ' . tabUrl('Dasbor.php?submitted=1'));
-        exit;
+        $upload = $_FILES['evidence'] ?? null;
+        if ($upload !== null) {
+            $uploadResult = validateReportEvidenceUpload($upload, $maxEvidenceBytes);
+            $error = $uploadResult['error'];
+            if ($error === '' && $uploadResult['data'] !== null) {
+                $evidenceHex = bin2hex($uploadResult['data']);
+                $evidenceMime = $uploadResult['mime'];
+            }
+        }
+
+        if ($error === '') {
+            $statement = $pdo->prepare(
+                "INSERT INTO reports (
+                    ticket, title, location, description, reporter_id, evidence_data, evidence_mime
+                 ) VALUES (
+                    :ticket, :title, :location, :description, :reporter_id,
+                    decode(NULLIF(:evidence_hex, ''), 'hex'), :evidence_mime
+                 )"
+            );
+            $statement->bindValue(':ticket', 'TKT-' . strtoupper(bin2hex(random_bytes(4))), PDO::PARAM_STR);
+            $statement->bindValue(':title', $title, PDO::PARAM_STR);
+            $statement->bindValue(':location', $location, PDO::PARAM_STR);
+            $statement->bindValue(':description', $description, PDO::PARAM_STR);
+            $statement->bindValue(':reporter_id', $reporterId, PDO::PARAM_INT);
+            $statement->bindValue(':evidence_hex', $evidenceHex ?? '', PDO::PARAM_STR);
+            $statement->bindValue(
+                ':evidence_mime',
+                $evidenceMime,
+                $evidenceMime === null ? PDO::PARAM_NULL : PDO::PARAM_STR
+            );
+
+            try {
+                $statement->execute();
+            } catch (PDOException $exception) {
+                error_log('Gagal menyimpan laporan pelapor: ' . $exception->getMessage());
+                $error = 'Laporan gagal disimpan. Silakan coba kembali.';
+            }
+
+            if ($error === '') {
+                header('Location: ' . tabUrl('Dasbor.php?submitted=1'));
+                exit;
+            }
+        }
     }
 }
 
 $statement = $pdo->prepare(
-    'SELECT ticket, title, reported_at, location, status, urgency
+    'SELECT id, ticket, title, reported_at, completed_at, location, status,
+            evidence_mime, completion_evidence_mime
      FROM reports
      WHERE reporter_id = :reporter_id
      ORDER BY reported_at DESC'
@@ -109,10 +145,10 @@ $displayName = (string) $currentUser['name'];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pelapor / Dasbor - Servitory</title>
-    <link rel="stylesheet" href="../assets/css/dasbor.css?v=8">
-    <link rel="stylesheet" href="../assets/css/app-polish.css?v=3">
+    <link rel="stylesheet" href="../assets/css/dasbor.css?v=9">
+    <link rel="stylesheet" href="../assets/css/app-polish.css?v=5">
 </head>
-<body>
+<body class="reporter-dashboard">
     <?php
     $headerUserName = $displayName;
     $headerRoleLabel = 'Pelapor';
@@ -162,7 +198,7 @@ $displayName = (string) $currentUser['name'];
             </button>
         </div>
 
-        <section class="history-section">
+        <section class="history-section reporter-history-section">
             <div class="section-heading">
                 <div>
                     <span class="eyebrow">PEMANTAUAN</span>
@@ -175,23 +211,29 @@ $displayName = (string) $currentUser['name'];
             <div class="table-responsive">
                 <table class="report-table">
                     <thead>
-                        <tr><th>Nomor Tiket</th><th>Masalah</th><th>Tanggal</th><th>Lokasi</th><th>Urgensi</th><th>Status</th></tr>
+                        <tr><th>Nomor Tiket</th><th>Masalah</th><th>Tanggal Laporan</th><th>Tanggal Selesai</th><th>Lokasi</th><th>Bukti</th><th>Status</th></tr>
                     </thead>
                     <tbody>
                         <?php if ($reports === []): ?>
-                            <tr><td colspan="6">Anda belum mengirim laporan.</td></tr>
+                            <tr><td colspan="7">Anda belum mengirim laporan.</td></tr>
                         <?php else: ?>
                             <?php foreach ($reports as $report): ?>
                                 <tr>
                                     <td class="ticket-cell"><?= h($report['ticket']) ?></td>
                                     <td class="title-cell"><?= h($report['title']) ?></td>
                                     <td><?= h(date('d M Y', strtotime($report['reported_at']))) ?></td>
+                                    <td><?= $report['completed_at'] === null ? '-' : h(date('d M Y, H:i', strtotime($report['completed_at']))) ?></td>
                                     <td><?= h($report['location']) ?></td>
                                     <td>
-                                        <?php if ($report['urgency'] === null): ?>
+                                        <?php if ($report['evidence_mime'] === null && $report['completion_evidence_mime'] === null): ?>
                                             -
                                         <?php else: ?>
-                                            <span class="urgency-<?= h(strtolower($report['urgency'])) ?>"><?= h($report['urgency']) ?></span>
+                                        <?php if ($report['evidence_mime'] !== null): ?>
+                                            <a class="evidence-link" href="<?= h(tabUrl('../Bukti.php?id=' . (int) $report['id'])) ?>" target="_blank" rel="noopener">Bukti awal</a><br>
+                                        <?php endif; ?>
+                                        <?php if ($report['completion_evidence_mime'] !== null): ?>
+                                            <a class="evidence-link" href="<?= h(tabUrl('../Bukti.php?id=' . (int) $report['id'] . '&source=completion')) ?>" target="_blank" rel="noopener">Bukti perbaikan</a>
+                                        <?php endif; ?>
                                         <?php endif; ?>
                                     </td>
                                     <td><span class="badge <?= h($statusClasses[$report['status']] ?? 'status-ditolak') ?>"><?= h($report['status']) ?></span></td>
@@ -214,7 +256,7 @@ $displayName = (string) $currentUser['name'];
                 <button class="close-btn" id="closeModalBtn" type="button" aria-label="Tutup">&times;</button>
             </div>
 
-            <form class="modal-form" method="post" action="Dasbor.php">
+            <form class="modal-form" method="post" action="Dasbor.php" enctype="multipart/form-data">
                 <input type="hidden" name="csrf_token" value="<?= h(csrfToken()) ?>">
                 <input type="hidden" name="tab" value="<?= h($tabId) ?>">
                 <div class="form-group">
@@ -233,6 +275,11 @@ $displayName = (string) $currentUser['name'];
                 <div class="form-group">
                     <label for="deskripsi">Deskripsi Masalah</label>
                     <textarea id="deskripsi" name="description" class="form-control textarea-control" placeholder="Jelaskan kendala yang terjadi..." rows="4"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="buktiFoto">Foto bukti (opsional)</label>
+                    <input type="file" id="buktiFoto" name="evidence" class="form-control" accept="image/jpeg,image/png,image/webp">
+                    <small class="evidence-hint">JPG, PNG, atau WebP. Maksimal 5 MB.</small>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn-cancel" id="cancelBtn">Batal</button>

@@ -1,0 +1,6 @@
+BEGIN;
+
+ALTER TABLE reports
+    DROP COLUMN IF EXISTS issue;
+
+COMMIT;

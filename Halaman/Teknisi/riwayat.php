@@ -65,9 +65,9 @@ $orderSql = $sort === 'oldest' ? 'ASC' : 'DESC';
 $fromSql = " FROM reports r
     JOIN users reporter ON reporter.id = r.reporter_id
     LEFT JOIN users technician ON technician.id = r.technician_id";
-$selectSql = 'SELECT r.ticket, reporter.name AS reporter_name, r.title,
-                     r.reported_at, r.location, technician.name AS technician_name,
-                     r.status, r.urgency';
+$selectSql = 'SELECT r.id, r.ticket, reporter.name AS reporter_name, r.title, r.evidence_mime,
+                     r.reported_at, r.completed_at, r.location,
+                     technician.name AS technician_name, r.status, r.urgency';
 
 $locations = $pdo->query(
     'SELECT DISTINCT location FROM reports
@@ -86,13 +86,14 @@ if (($_GET['export'] ?? '') === 'csv') {
         throw new RuntimeException('Tidak dapat menyiapkan file ekspor CSV.');
     }
     fwrite($output, "\xEF\xBB\xBF");
-    fputcsv($output, ['Nomor Tiket', 'Pelapor', 'Masalah', 'Tanggal', 'Lokasi', 'Teknisi', 'Urgensi', 'Status']);
+    fputcsv($output, ['Nomor Tiket', 'Pelapor', 'Masalah', 'Tanggal Laporan', 'Tanggal Selesai', 'Lokasi', 'Teknisi', 'Urgensi', 'Status']);
     while ($report = $statement->fetch(PDO::FETCH_ASSOC)) {
         fputcsv($output, [
             $report['ticket'],
             $report['reporter_name'],
             $report['title'],
             date('Y-m-d H:i', strtotime($report['reported_at'])),
+            $report['completed_at'] === null ? '-' : date('Y-m-d H:i', strtotime($report['completed_at'])),
             $report['location'],
             $report['technician_name'] ?? '-',
             $report['urgency'],
@@ -139,9 +140,9 @@ $statusClasses = [
     <title>Teknisi / Riwayat Laporan - Servitory</title>
     <link rel="stylesheet" href="../assets/css/teknisi.css">
     <link rel="stylesheet" href="../assets/css/riwayat.css">
-    <link rel="stylesheet" href="../assets/css/app-polish.css?v=3">
+    <link rel="stylesheet" href="../assets/css/app-polish.css?v=6">
 </head>
-<body>
+<body class="technician-history-page">
     <?php
     $headerUserName = (string) $currentUser['name'];
     $headerRoleLabel = 'Teknisi';
@@ -156,16 +157,23 @@ $statusClasses = [
     </nav>
 
     <main class="main-container" data-live-updates>
-        <div class="page-header-row">
+        <div class="page-header-row dashboard-hero technician-hero technician-history-hero">
             <div>
+                <span class="eyebrow">ARSIP TEKNISI</span>
                 <h2>Riwayat Seluruh Laporan</h2>
-                <p class="info-text">Cari, saring, dan ekspor laporan yang tersimpan.</p>
+                <p class="technician-history-intro">Cari, saring, dan ekspor laporan yang tersimpan.</p>
             </div>
             <a class="btn-ekspor" href="<?= h($exportUrl) ?>">Ekspor CSV</a>
         </div>
 
-        <form class="filter-card" method="get" action="riwayat.php">
+        <form class="filter-card technician-history-filters" method="get" action="riwayat.php">
             <input type="hidden" name="tab" value="<?= h($tabId) ?>">
+            <div class="technician-history-filter-heading">
+                <div>
+                    <h3>Saring laporan</h3>
+                    <p>Gunakan satu atau beberapa kriteria untuk menemukan laporan.</p>
+                </div>
+            </div>
             <div class="filter-grid">
                 <div class="filter-group">
                     <label for="filter-q">Pencarian</label>
@@ -221,45 +229,75 @@ $statusClasses = [
             </div>
         </form>
 
-        <div class="table-responsive">
-            <table class="report-table">
-                <thead>
-                    <tr><th>Nomor Tiket</th><th>Pelapor</th><th>Masalah</th><th>Tanggal</th><th>Lokasi</th><th>Teknisi</th><th>Urgensi</th><th>Status</th></tr>
-                </thead>
-                <tbody>
-                    <?php if ($reports === []): ?>
-                        <tr><td colspan="8">Tidak ada laporan yang cocok dengan filter.</td></tr>
-                    <?php else: ?>
-                        <?php foreach ($reports as $report): ?>
-                            <tr>
-                                <td><?= h($report['ticket']) ?></td>
-                                <td><?= h($report['reporter_name']) ?></td>
-                                <td><?= h($report['title']) ?></td>
-                                <td><?= h(date('d M Y', strtotime($report['reported_at']))) ?></td>
-                                <td><?= h($report['location']) ?></td>
-                                <td><?= h($report['technician_name'] ?? '-') ?></td>
-                                <td><span class="badge <?= h('urgency-' . strtolower($report['urgency'])) ?>"><?= h($report['urgency']) ?></span></td>
-                                <td><span class="badge <?= h($statusClasses[$report['status']] ?? 'status-ditolak') ?>"><?= h($report['status']) ?></span></td>
-                            </tr>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-            <div class="table-footer">
-                <span>Menampilkan <?= $totalReports === 0 ? 0 : $offset + 1 ?>-<?= min($offset + $perPage, $totalReports) ?> dari <?= $totalReports ?> laporan</span>
-                <nav class="pagination" aria-label="Navigasi halaman">
-                    <?php if ($page > 1): ?>
-                        <a class="page-btn" href="?<?= h(http_build_query(array_merge($filterValues, ['page' => $page - 1]))) ?>">Sebelumnya</a>
-                    <?php endif; ?>
-                    <?php for ($pageNumber = max(1, $page - 2); $pageNumber <= min($totalPages, $page + 2); $pageNumber++): ?>
-                        <a class="page-btn <?= $pageNumber === $page ? 'active' : '' ?>" href="?<?= h(http_build_query(array_merge($filterValues, ['page' => $pageNumber]))) ?>" <?= $pageNumber === $page ? 'aria-current="page"' : '' ?>><?= $pageNumber ?></a>
-                    <?php endfor; ?>
-                    <?php if ($page < $totalPages): ?>
-                        <a class="page-btn" href="?<?= h(http_build_query(array_merge($filterValues, ['page' => $page + 1]))) ?>">Berikutnya</a>
-                    <?php endif; ?>
-                </nav>
+        <section class="technician-history-section">
+            <div class="section-header-top technician-history-heading">
+                <div>
+                    <span class="eyebrow">DAFTAR LAPORAN</span>
+                    <h2>Hasil riwayat</h2>
+                </div>
+                <span class="technician-history-count">
+                    <strong><?= $totalReports ?></strong> laporan ditemukan
+                </span>
             </div>
-        </div>
+            <div class="table-responsive">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th scope="col">Nomor Tiket</th>
+                            <th scope="col">Pelapor</th>
+                            <th scope="col">Masalah</th>
+                            <th scope="col">Tanggal Laporan</th>
+                            <th scope="col">Tanggal Selesai</th>
+                            <th scope="col">Lokasi</th>
+                            <th scope="col">Bukti</th>
+                            <th scope="col">Teknisi</th>
+                            <th scope="col">Urgensi</th>
+                            <th scope="col">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if ($reports === []): ?>
+                            <tr><td colspan="10">Tidak ada laporan yang cocok dengan filter.</td></tr>
+                        <?php else: ?>
+                            <?php foreach ($reports as $report): ?>
+                                <tr>
+                                    <td><span class="technician-history-ticket"><?= h($report['ticket']) ?></span></td>
+                                    <td><?= h($report['reporter_name']) ?></td>
+                                    <td><?= h($report['title']) ?></td>
+                                    <td><?= h(date('d M Y', strtotime($report['reported_at']))) ?></td>
+                                    <td><?= $report['completed_at'] === null ? '-' : h(date('d M Y, H:i', strtotime($report['completed_at']))) ?></td>
+                                    <td><?= h($report['location']) ?></td>
+                                    <td>
+                                        <?php if ($report['evidence_mime'] !== null): ?>
+                                            <a class="evidence-link" href="<?= h(tabUrl('../Bukti.php?id=' . (int) $report['id'])) ?>" target="_blank" rel="noopener">Lihat foto</a>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </td>
+                                    <td><?= h($report['technician_name'] ?? '-') ?></td>
+                                    <td><span class="badge <?= h('urgency-' . strtolower($report['urgency'])) ?>"><?= h($report['urgency']) ?></span></td>
+                                    <td><span class="badge <?= h($statusClasses[$report['status']] ?? 'status-ditolak') ?>"><?= h($report['status']) ?></span></td>
+                                </tr>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+                <div class="table-footer">
+                    <span>Menampilkan <?= $totalReports === 0 ? 0 : $offset + 1 ?>-<?= min($offset + $perPage, $totalReports) ?> dari <?= $totalReports ?> laporan</span>
+                    <nav class="pagination" aria-label="Navigasi halaman">
+                        <?php if ($page > 1): ?>
+                            <a class="page-btn" href="?<?= h(http_build_query(array_merge($filterValues, ['page' => $page - 1]))) ?>">Sebelumnya</a>
+                        <?php endif; ?>
+                        <?php for ($pageNumber = max(1, $page - 2); $pageNumber <= min($totalPages, $page + 2); $pageNumber++): ?>
+                            <a class="page-btn <?= $pageNumber === $page ? 'active' : '' ?>" href="?<?= h(http_build_query(array_merge($filterValues, ['page' => $pageNumber]))) ?>" <?= $pageNumber === $page ? 'aria-current="page"' : '' ?>><?= $pageNumber ?></a>
+                        <?php endfor; ?>
+                        <?php if ($page < $totalPages): ?>
+                            <a class="page-btn" href="?<?= h(http_build_query(array_merge($filterValues, ['page' => $page + 1]))) ?>">Berikutnya</a>
+                        <?php endif; ?>
+                    </nav>
+                </div>
+            </div>
+        </section>
     </main>
     <?php include __DIR__ . '/../includes/footer.php'; ?>
     <script src="../assets/js/live-updates.js"></script>

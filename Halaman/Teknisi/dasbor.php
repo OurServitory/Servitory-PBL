@@ -8,6 +8,8 @@ $tabId = authTabId();
 $technicianId = (int) $currentUser['id'];
 $message = '';
 $error = '';
+$maxEvidenceBytes = 5 * 1024 * 1024;
+require_once __DIR__ . '/../includes/report_evidence.php';
 
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     verifyCsrfToken();
@@ -23,48 +25,79 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     if (!$reportId || !isset($transitions[$action])) {
         $error = 'Aksi laporan tidak valid.';
     } else {
-        [$fromStatus, $toStatus, $assignOnAccept] = $transitions[$action];
-        if ($assignOnAccept) {
-            $statement = $pdo->prepare(
-                "UPDATE reports SET technician_id = :technician_id
-                 WHERE id = :id AND status = :status AND technician_id IS NULL
-                   AND confirmed_at IS NOT NULL AND urgency IS NOT NULL"
+        $completionEvidenceHex = '';
+        $completionEvidenceMime = null;
+        if ($action === 'complete') {
+            $uploadResult = validateReportEvidenceUpload(
+                $_FILES['completion_evidence'] ?? null,
+                $maxEvidenceBytes
             );
-        } else {
-            $statement = $pdo->prepare(
-                'UPDATE reports SET status = :new_status, technician_id = :technician_id
-                 WHERE id = :id AND status = :status
-                   AND (technician_id IS NULL OR technician_id = :technician_match)
-                   AND confirmed_at IS NOT NULL AND urgency IS NOT NULL'
-            );
+            $error = $uploadResult['error'];
+            if ($error === '' && $uploadResult['data'] !== null) {
+                $completionEvidenceHex = bin2hex($uploadResult['data']);
+                $completionEvidenceMime = $uploadResult['mime'];
+            }
         }
 
-        $parameters = [
-            'technician_id' => $technicianId,
-            'id' => $reportId,
-            'status' => $fromStatus,
-        ];
-        if (!$assignOnAccept) {
-            $parameters['new_status'] = $toStatus;
-            $parameters['technician_match'] = $technicianId;
-        }
-        $statement->execute($parameters);
+        if ($error === '') {
+            [$fromStatus, $toStatus, $assignOnAccept] = $transitions[$action];
+            if ($assignOnAccept) {
+                $statement = $pdo->prepare(
+                    "UPDATE reports SET technician_id = :technician_id
+                     WHERE id = :id AND status = :status AND technician_id IS NULL
+                       AND confirmed_at IS NOT NULL AND urgency IS NOT NULL"
+                );
+            } elseif ($action === 'complete') {
+                $statement = $pdo->prepare(
+                    "UPDATE reports
+                     SET status = :new_status, technician_id = :technician_id,
+                         completed_at = CURRENT_TIMESTAMP,
+                         completion_evidence_data = decode(NULLIF(:completion_evidence_hex, ''), 'hex'),
+                         completion_evidence_mime = :completion_evidence_mime
+                     WHERE id = :id AND status = :status
+                       AND (technician_id IS NULL OR technician_id = :technician_match)
+                       AND confirmed_at IS NOT NULL AND urgency IS NOT NULL"
+                );
+            } else {
+                $statement = $pdo->prepare(
+                    'UPDATE reports SET status = :new_status, technician_id = :technician_id
+                     WHERE id = :id AND status = :status
+                       AND (technician_id IS NULL OR technician_id = :technician_match)
+                       AND confirmed_at IS NOT NULL AND urgency IS NOT NULL'
+                );
+            }
 
-        if ($statement->rowCount() === 1) {
-            $message = [
-                'accept' => 'Laporan berhasil diterima dan ditugaskan kepada Anda.',
-                'reject' => 'Laporan berhasil ditolak.',
-                'schedule' => 'Perbaikan berhasil dijadwalkan.',
-                'complete' => 'Laporan berhasil ditandai selesai.',
-            ][$action];
-        } else {
-            $error = 'Laporan sudah diproses teknisi lain atau statusnya telah berubah.';
+            $parameters = [
+                'technician_id' => $technicianId,
+                'id' => $reportId,
+                'status' => $fromStatus,
+            ];
+            if (!$assignOnAccept) {
+                $parameters['new_status'] = $toStatus;
+                $parameters['technician_match'] = $technicianId;
+                if ($action === 'complete') {
+                    $parameters['completion_evidence_hex'] = $completionEvidenceHex;
+                    $parameters['completion_evidence_mime'] = $completionEvidenceMime;
+                }
+            }
+            $statement->execute($parameters);
+
+            if ($statement->rowCount() === 1) {
+                $message = [
+                    'accept' => 'Laporan berhasil diterima dan ditugaskan kepada Anda.',
+                    'reject' => 'Laporan berhasil ditolak.',
+                    'schedule' => 'Perbaikan berhasil dijadwalkan.',
+                    'complete' => 'Laporan berhasil ditandai selesai.',
+                ][$action];
+            } else {
+                $error = 'Laporan sudah diproses teknisi lain atau statusnya telah berubah.';
+            }
         }
     }
 }
 
 $statement = $pdo->prepare(
-    "SELECT r.id, r.ticket, r.title, r.location, r.description,
+    "SELECT r.id, r.ticket, r.title, r.location, r.description, r.evidence_mime,
             r.status, r.urgency, r.reported_at, u.name AS reporter_name,
             technician.name AS technician_name
      FROM reports r
@@ -90,11 +123,11 @@ $pendingCount = count(array_filter($reports, static fn ($report) => $report['sta
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Teknisi / Dasbor - Servitory</title>
-    <link rel="stylesheet" href="../assets/css/teknisi.css">
+    <link rel="stylesheet" href="../assets/css/teknisi.css?v=3">
     <link rel="stylesheet" href="../assets/css/riwayat.css">
-    <link rel="stylesheet" href="../assets/css/app-polish.css?v=3">
+    <link rel="stylesheet" href="../assets/css/app-polish.css?v=5">
 </head>
-<body>
+<body class="technician-dashboard">
     <?php
     $headerUserName = (string) $currentUser['name'];
     $headerRoleLabel = 'Teknisi';
@@ -117,8 +150,11 @@ $pendingCount = count(array_filter($reports, static fn ($report) => $report['sta
         <?php endif; ?>
 
         <section class="section-block">
-            <div class="section-header-top">
-                <h2>Laporan aktif</h2>
+            <div class="section-header-top dashboard-hero technician-hero">
+                <div>
+                    <span class="eyebrow">PORTAL TEKNISI</span>
+                    <h2>Laporan aktif</h2>
+                </div>
                 <span class="info-text"><?= $pendingCount ?> laporan baru menunggu diambil</span>
             </div>
             <div class="reports-grid">
@@ -140,6 +176,9 @@ $pendingCount = count(array_filter($reports, static fn ($report) => $report['sta
                                 <summary>Lihat deskripsi</summary>
                                 <p><?= nl2br(h($report['description'])) ?></p>
                             </details>
+                            <?php if ($report['evidence_mime'] !== null): ?>
+                                <p class="report-detail"><strong>Bukti:</strong> <a class="evidence-link" href="<?= h(tabUrl('../Bukti.php?id=' . (int) $report['id'])) ?>" target="_blank" rel="noopener">Lihat foto</a></p>
+                            <?php endif; ?>
                             <div class="card-actions">
                                 <?php if ($report['status'] === 'Diterima' && $report['technician_name'] === null): ?>
                                     <form method="post" action="dasbor.php">
@@ -162,10 +201,13 @@ $pendingCount = count(array_filter($reports, static fn ($report) => $report['sta
                                         <button class="btn-jadwal" type="submit" name="action" value="schedule">Jadwalkan Perbaikan</button>
                                     </form>
                                 <?php else: ?>
-                                    <form method="post" action="dasbor.php" data-confirm="Tandai laporan ini selesai?">
+                                    <form class="complete-report-form" method="post" action="dasbor.php" enctype="multipart/form-data" data-confirm="Tandai laporan ini selesai?">
                                         <input type="hidden" name="csrf_token" value="<?= h(csrfToken()) ?>">
                                         <input type="hidden" name="tab" value="<?= h($tabId) ?>">
                                         <input type="hidden" name="report_id" value="<?= (int) $report['id'] ?>">
+                                        <label for="completion-evidence-<?= (int) $report['id'] ?>">Foto bukti perbaikan (opsional)</label>
+                                        <input id="completion-evidence-<?= (int) $report['id'] ?>" type="file" name="completion_evidence" accept="image/jpeg,image/png,image/webp">
+                                        <small>JPG, PNG, atau WebP. Maksimal 5 MB.</small>
                                         <button class="btn-terima" type="submit" name="action" value="complete">Tandai Selesai</button>
                                     </form>
                                 <?php endif; ?>
@@ -180,14 +222,14 @@ $pendingCount = count(array_filter($reports, static fn ($report) => $report['sta
             <div class="scheduling-content">
                 <h2>Alur penanganan</h2>
                 <div class="workflow-flow">
-                    <span class="status-box">Diterima</span>
-                    <span aria-hidden="true">&rarr;</span>
-                    <span class="status-box">Dijadwalkan</span>
-                    <span aria-hidden="true">&rarr;</span>
-                    <span class="status-box">Selesai</span>
+                    <span class="status-box status-box-received">Diterima</span>
+                    <span class="workflow-arrow" aria-hidden="true">&rarr;</span>
+                    <span class="status-box status-box-scheduled">Dijadwalkan</span>
+                    <span class="workflow-arrow" aria-hidden="true">&rarr;</span>
+                    <span class="status-box status-box-completed">Selesai</span>
                 </div>
             </div>
-            <a class="btn-jadwal" href="<?= h(tabUrl('riwayat.php?status=Dijadwalkan')) ?>">Lihat Riwayat Laporan</a>
+            <a class="btn-jadwal" href="<?= h(tabUrl('riwayat.php')) ?>">Lihat Riwayat Laporan</a>
         </section>
     </main>
     <?php include __DIR__ . '/../includes/footer.php'; ?>

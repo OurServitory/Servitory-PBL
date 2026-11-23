@@ -38,7 +38,7 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
 }
 
 $reports = $pdo->query(
-    "SELECT r.id, r.ticket, r.title, r.location, r.description, r.reported_at,
+    "SELECT r.id, r.ticket, r.title, r.location, r.description, r.reported_at, r.evidence_mime,
             reporter.name AS reporter_name
      FROM reports r
      JOIN users reporter ON reporter.id = r.reporter_id
@@ -48,7 +48,8 @@ $reports = $pdo->query(
 )->fetchAll(PDO::FETCH_ASSOC);
 
 $historyReports = $pdo->query(
-    "SELECT r.ticket, r.title, r.reported_at, r.urgency, r.status
+    "SELECT r.id, r.ticket, r.title, r.reported_at, r.completed_at,
+            r.urgency, r.status, r.evidence_mime
      FROM reports r
      WHERE r.confirmed_at IS NOT NULL AND r.urgency IS NOT NULL
      ORDER BY r.reported_at DESC"
@@ -70,10 +71,10 @@ $statusClasses = [
     <title>Koordinator / Dasbor - Servitory</title>
     <link rel="stylesheet" href="../assets/css/teknisi.css">
     <link rel="stylesheet" href="../assets/css/koordinator.css">
-    <link rel="stylesheet" href="../assets/css/app-polish.css?v=3">
+    <link rel="stylesheet" href="../assets/css/app-polish.css?v=6">
 </head>
 
-<body>
+<body class="coordinator-dashboard">
     <?php
     $headerUserName = (string) $currentUser['name'];
     $headerRoleLabel = 'Koordinator';
@@ -82,7 +83,7 @@ $statusClasses = [
 
     <main class="main-container" data-live-updates>
         <section class="section-block">
-            <div class="section-header-top">
+            <div class="section-header-top dashboard-hero coordinator-hero">
                 <div>
                     <span class="eyebrow">PORTAL KOORDINATOR</span>
                     <h1>Verifikasi laporan masuk</h1>
@@ -116,6 +117,9 @@ $statusClasses = [
                                 <summary>Lihat deskripsi</summary>
                                 <p><?= nl2br(h($report['description'])) ?></p>
                             </details>
+                            <?php if ($report['evidence_mime'] !== null): ?>
+                                <p class="report-detail"><strong>Bukti:</strong> <a class="evidence-link" href="<?= h(tabUrl('../Bukti.php?id=' . (int) $report['id'])) ?>" target="_blank" rel="noopener">Lihat foto</a></p>
+                            <?php endif; ?>
                             <form class="confirmation-form" method="post" action="dasbor.php">
                                 <input type="hidden" name="csrf_token" value="<?= h(csrfToken()) ?>">
                                 <input type="hidden" name="tab" value="<?= h($tabId) ?>">
@@ -135,34 +139,50 @@ $statusClasses = [
             </div>
         </section>
 
-        <section class="section-block history-section">
-            <div class="section-header-top">
-                <h2>Riwayat laporan masuk</h2>
-                <span class="info-text"><?= count($historyReports) ?> laporan terkonfirmasi</span>
+        <section class="section-block history-section coordinator-history-section">
+            <div class="section-header-top coordinator-history-heading">
+                <div>
+                    <span class="eyebrow">PEMANTAUAN PENANGANAN</span>
+                    <h2>Riwayat laporan masuk</h2>
+                    <p class="coordinator-history-description">Pantau urgensi dan perkembangan setiap laporan yang telah dikonfirmasi.</p>
+                </div>
+                <span class="coordinator-history-count">
+                    <strong><?= count($historyReports) ?></strong> laporan terkonfirmasi
+                </span>
             </div>
 
             <div class="table-responsive">
                 <table class="report-table">
                     <thead>
                         <tr>
-                            <th>Nomor Tiket</th>
-                            <th>Laporan</th>
-                            <th>Tanggal Masuk</th>
-                            <th>Urgensi</th>
-                            <th>Status</th>
+                            <th scope="col">Nomor Tiket</th>
+                            <th scope="col">Laporan</th>
+                            <th scope="col">Tanggal Masuk</th>
+                            <th scope="col">Tanggal Selesai</th>
+                            <th scope="col">Bukti</th>
+                            <th scope="col">Urgensi</th>
+                            <th scope="col">Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         <?php if ($historyReports === []): ?>
                             <tr>
-                                <td colspan="5">Belum ada riwayat laporan terkonfirmasi.</td>
+                                <td colspan="7">Belum ada riwayat laporan terkonfirmasi.</td>
                             </tr>
                         <?php else: ?>
                             <?php foreach ($historyReports as $report): ?>
                                 <tr>
-                                    <td><?= h($report['ticket']) ?></td>
+                                    <td><span class="coordinator-history-ticket"><?= h($report['ticket']) ?></span></td>
                                     <td><?= h($report['title']) ?></td>
                                     <td><?= h(date('d M Y', strtotime($report['reported_at']))) ?></td>
+                                    <td><?= $report['completed_at'] === null ? '-' : h(date('d M Y, H:i', strtotime($report['completed_at']))) ?></td>
+                                    <td>
+                                        <?php if ($report['evidence_mime'] !== null): ?>
+                                            <a class="evidence-link" href="<?= h(tabUrl('../Bukti.php?id=' . (int) $report['id'])) ?>" target="_blank" rel="noopener">Lihat foto</a>
+                                        <?php else: ?>
+                                            -
+                                        <?php endif; ?>
+                                    </td>
                                     <td><span
                                             class="badge <?= h('urgency-' . strtolower($report['urgency'])) ?>"><?= h($report['urgency']) ?></span>
                                     </td>

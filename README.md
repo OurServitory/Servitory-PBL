@@ -40,6 +40,28 @@ Jika database lama masih memiliki kolom `issue` wajib yang tidak lagi dipakai
 form laporan, jalankan `Halaman/sql/08_perbaiki_kolom_issue_lama.sql` agar
 kolom tersebut boleh kosong tanpa menghapus nilai laporan yang tersimpan.
 
+Laporan dapat menyertakan foto bukti opsional (JPG, PNG, atau WebP, maksimal
+5 MB). Untuk database yang sudah ada, jalankan `Halaman/sql/09_tambah_bukti_foto.sql`.
+Untuk instalasi baru, kolom bukti foto sudah tercakup di `02_schema.sql`.
+Foto disimpan sebagai data biner di PostgreSQL dan hanya dapat dibuka oleh
+pengguna yang berhak melihat laporannya.
+
+Semua peran dapat membuka halaman Profil untuk melihat informasi akun dan
+mengunggah foto profil (JPG, PNG, atau WebP, maksimal 5 MB). Untuk database
+yang sudah ada, jalankan `Halaman/sql/12_tambah_foto_profil.sql`. Instalasi
+baru sudah menyertakan kolom foto profil di `02_schema.sql`.
+
+Waktu penyelesaian laporan dicatat saat Teknisi mengubah status menjadi
+`Selesai`. Untuk database yang sudah ada, jalankan
+`Halaman/sql/10_tambah_tanggal_selesai.sql`. Laporan lama yang sudah berstatus
+`Selesai` tidak memiliki waktu penyelesaian historis sehingga kolomnya tetap
+kosong.
+
+Saat menandai laporan selesai, Teknisi dapat mengunggah foto bukti perbaikan
+opsional (JPG, PNG, atau WebP, maksimal 5 MB). Untuk database yang sudah ada,
+jalankan `Halaman/sql/11_tambah_bukti_foto_perbaikan.sql`. Foto perbaikan
+ditampilkan terpisah dari foto awal laporan di dasbor Pelapor.
+
 Konfigurasi koneksi PHP ada di `Halaman/includes/koneksi.php`. Sesuaikan host, port,
 username, dan password dengan konfigurasi PostgreSQL lokal Anda.
 
@@ -50,3 +72,24 @@ form laporan menyarankan ruang yang pernah digunakan, tetapi tetap dapat diketik
 atau diubah secara manual. Setiap tab login memiliki sesi akun sendiri, jadi
 beberapa pengguna dapat masuk pada tab berbeda di browser yang sama; tombol Keluar
 hanya mengakhiri sesi pada tab tersebut.
+
+## Retensi laporan otomatis
+
+Laporan dan foto buktinya yang berumur lebih dari 30 hari berdasarkan
+`reported_at` akan dihapus setiap hari pukul 03.00 melalui Windows Task
+Scheduler. Akun pengguna tidak dihapus. Jalankan pemeriksaan tanpa menghapus
+data terlebih dahulu:
+
+```powershell
+php .\maintenance\cleanup_old_reports.php --dry-run
+```
+
+Setelah memeriksa jumlah laporan yang akan dihapus, daftarkan tugas terjadwal
+untuk akun Windows saat ini:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\maintenance\register_report_cleanup_task.ps1
+```
+
+Tugas berjalan saat akun Windows sedang masuk. Jika jadwal terlewat ketika
+perangkat tidak tersedia, tugas dijalankan saat tersedia kembali.
